@@ -1,0 +1,300 @@
+~~~~~~~~~~~~~Maven & Jenkins~~~~~~~~~~~~~~~~~~
+
+1. Maven - is Build tool
+Build tool - make packes from source code
+Example
+.Net apps - Nuget
+Python - Pybuild
+Java - Maven
+C & C++ - MSBuild
+
+
+
+POM File - Project Object Model - imp file in Maven pom.xml file
+
+
+~~~~~~~~~~~Installing Maven~~~~~~~~~~~~~~~~
+
+1. First install java default-jdk
+   apt install default-jdk -y
+   java -version
+2. apt install maven -y
+   mvn -version
+
+~~~~~~~~Making sample project in MVN~~~~~~~~~~~
+
+1. mvn archetype:generate  // skeleton or sample project (archetype)
+  #project co-ordinates
+   groupID - Company name - com.example.www // It is standard followed in reverse
+   artifactID - application name - hello-world
+   version - 1.0
+   packages-
+
+JAR- backend services/destop application
+WAR- Web application
+EAR- Enterprise application
+
+2. This will create hello-world in your machine in which u will fine pom.xml and src
+
+ #mvn install
+
+Now this will create target folder
+In this u find .jar file
+
+
+After making packages you can share it in central repo like 
+
+Jfrog
+Nexus
+Artifactory
+
+This tool is used to handle packages so that u share it with other user
+
+
+~~~~Phase in Maven life cycle~~~~
+1.Validate
+2.compilation
+3.Test
+4.package
+5.Verify
+6.Installing
+7.Deploy
+
+
+~~~~Maven Repositories~~~~
+Local and central Repositories
+
+*Maven Repositories will check pom.xml file and 
+dependencies required and Install all dependencies.
+
+
+All the dependencies will download on 
+/root/.m2/repository
+
+~~~~Deployment in MVN~~~~~~
+
+Foe this we will download Apache Tomcat
+
+wget https://dlcdn.apache.org/tomcat/tomcat-10/v10.0.17/bin/apache-tomcat-10.0.17.tar.gz
+#tar -xzf apache-tomcat-10.0.17.tar.gz
+
+-----Starting Apache -----
+goto apache-tomcat folder
+cd bin/
+./catalina.sh start //this will start tomcat service
+
+
+
+
+
+-----------------------Jenkins---------------------------------
+
+Its all about plugins :- every thing is added with plugins
+
+
+First install JAVA. 
+
+Then Install Jenkins
+
+   curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo tee \
+  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install jenkins
+
+
+/var/lib/jenkins  -- path created when jenkins installed
+
+*** By default jenkins runs on 8080 port 
+
+you can check jenkins running by :::---
+
+service jenkins status
+
+
+you can open jenkins using server IP:8080
+Need key :: /var/lib/jenkins/secrets/initialAdminPassword
+
+Jenkins page will open and select suggested plugins
+
+It will install all default plugins
+
+then ask for user name and initialAdminPassword
+
+ID:admin PASS:admin
+
+URL :: http://18.206.54.130:8080/
+
+
+~~~~~~~~~~~~~~~~~~~~~~Jenkins~~~~~~~~~~~~~~~~~~~~~~
+
+You can manage puglins in 
+Manage jenkins>> manage puglins // all available pulgins is here.
+
+
+------------Creating Jenkins jobs--------------
+
+1. Add new item 
+2. Add name e.g test_job
+3. select Freestyle project. 
+4. Now enter required details.
+5. Add git >> URL of repo 
+6. Then select required details and create.
+
+Now u can check u r job from dashord.
+
+
+Location of Project In server
+
+var/lib/jenkins/workspace/maven_project
+
+--------------Creating Jenkins user ---------------
+1. Manage jenkins
+2. Manage User 
+3. Create user.
+
+
+
+--------------Ristricting user ------------------
+1.Manage jenkins  
+2.Manage plugins
+3.In available tab search Role-based Authorization Strategy.
+4. Install without restart
+5. Then again manage jenkins
+6. Global Security 
+7. Role-based Strategy >> Save
+
+Now manage and assign roles is available
+click that and Manage Roles
+Add roll
+
+
+
+
+
+~~~~~~~~~ adding git repo and maven ~~~~~~~~~~~
+
+1> Jenkins jobs - packages build  
+
+add new project
+add git url 
+build trigger --- github hook trigger for GITScm polling
+
+In Build -- Invoke top-level Maven target
+install  // In Comment box
+
+save
+
+In git hub repo --
+goto to setting -- select Webhooks
+add
+Payload-- http://18.206.54.130:8080/github-webhook
+
+----------------------------------------------
+Hooks - Local repo trigger jenkins
+Webhooks - central repo trigger jenkins
+----------------------------------------------
+
+Q. How you are Intergrating jenkins with github?
+_____________________________________________________
+
+2. Second Job -- Auto Deploy
+
+Add new item 
+Add details
+In Build execute shell
+_______________________________________________________________________________________________________________________
+# This will delete the old war package
+rm -rf /home/ubuntu/apache-tomcat-10.0.17/webapps/hello-world-web-app.war
+
+#This will copy and deploy new war package
+
+cp /var/lib/jenkins/workspace/maven_project/target/hello-world-web-app.war /home/ubuntu/apache-tomcat-10.0.17/webapps/
+_______________________________________________________________________________________________________________________
+
+Add save.
+
+_________________________________
+
+Connecting Jobs 
+
+In Build package job >> goto Add post-build action.
+Build other project and give job name their.
+
+__________________________________
+
+
+
+
+
+
+~~~~~~~~~~~~~~~PipeLine as Code~~~~~~~~~~~~~~~~~~~~
+2 ways
+Scripted PipeLine - 
+node // Started with node
+
+Declarative PipeLine - 
+pipeLine // started with pipeline
+
+Use groovy syntax
+
+pipeline {
+   agent any
+   stages{
+   stage ("1. Clone the git repo") {
+      steps {
+         git branch: 'main', url: 'https://github.com/RawatStar/maven_repo.git'
+      }
+   }
+   stage ("2. Build the packahe") {
+      steps {
+         sh "mvn clean install"
+      }
+   }
+   stage ("3. Remove the old package") {
+      steps{
+         sh "rm -rf /home/ubuntu/apache-tomcat-10.0.17/webapps/hello-world-web-app.war"
+      }
+   }
+   stage ("4. Deploy new package") {
+      steps {
+         sh "cp /var/lib/jenkins/workspace/Declarative_pipline/target/hello-world-web-app.war /home/ubuntu/apache-tomcat-10.0.17/webapps/"
+
+      }
+   }
+  }
+}
+
+
+// If u dont know the syntax u can use (pipeline syntax)snippet in jenkins to generate code.
+
+
+___________________________________________
+~~~~~~~~~~~~~~~~~Node In Jenkins~~~~~~~~~~~~~~~
+
+Connecting jenkins with multiple nodes.
+
+create 2 ec2 instance and Install jdk both 
+create mkdir build-server //node1
+
+goto jenkins server::----
+
+manage jenkins>> manage nodes and cloud 
+
+Add node>> New Node >> build_server >> details >> Number of executor (3) //Number of jobs
+
+Remote root directory /home/ubuntu/build-server
+
+Label : alias name
+
+Usage : only.....
+
+Launch method : launch via SSH 
+
+Save
+
+2:08 min
